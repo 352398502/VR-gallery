@@ -1,52 +1,60 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VR全景</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>VR 分类浏览</title>
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <style>
-        body { margin: 0; font-family: sans-serif; background: #1a1a1a; color: white; }
-        #viewer { width: 100%; height: 80vh; background: #000; }
-        .controls { padding: 20px; text-align: center; }
-        select { padding: 10px; border-radius: 5px; background: #333; color: white; border: 1px solid #555; font-size: 16px; }
-        .info { font-size: 12px; color: #888; margin-top: 10px; }
+      /* 控制 UI 菜单的样式 */
+      .menu-container {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        z-index: 999;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 15px;
+        border-radius: 8px;
+        color: white;
+        font-family: sans-serif;
+      }
+      select {
+        margin-top: 10px;
+        padding: 5px;
+        width: 100%;
+        cursor: pointer;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
 
-<div id="viewer"></div>
+    <div class="menu-container">
+      <label>选择全景场景</label>
+      <select id="scene-selector">
+        <option value="20260416_123904_035.jpg">第一个全景场景 (客厅)</option>
+        <option value="20250824_双江古镇.jpg">第二个全景场景 (卧室)</option>
+        <option value="VR/时间地点事件/202310十一广东/IMG_20231001_173837.jpg">第三个全景场景 (厨房)</option>
+      </select>
+    </div>
 
-<div class="controls">
-    <h3>选择全景图</h3>
-    <select id="scene-select" onchange="loadScene(this.value)">
-        <option value="20260416_123904_035.jpg">第一个全景场景</option>
-        <option value="20250824_双江古镇.jpg">第二个全景场景</option>
-        <option value="VR/时间地点事件/202310十一广东/IMG_20231001_173837.jpg">第三个全景场景</option>
-    </select>
-    <p class="info">提示：请确保图片文件名与选项中的 value 一致</p>
-</div>
+    <a-scene>
+      <a-assets>
+        <img id="panorama" src="img/living-room/scene1.jpg">
+      </a-assets>
 
-<script>
-    let viewer = null;
+      <a-sky id="main-sky" src="#panorama" rotation="0 -90 0"></a-sky>
+    </a-scene>
 
-    function loadScene(imgName) {
-        if (viewer) viewer.destroy(); // 销毁旧实例，节省内存
-        
-        viewer = pannellum.viewer('viewer', {
-            "type": "equirectangular",
-            "panorama": imgName,
-            "autoLoad": true,
-            "compass": true
-        });
-    }
+    <script>
+      // 获取下拉菜单和全景天空实体
+      const selector = document.getElementById('scene-selector');
+      const sky = document.getElementById('main-sky');
 
-    // 默认加载第一个
-    window.onload = () => {
-        const firstImg = document.getElementById('scene-select').value;
-        loadScene(firstImg);
-    };
-</script>
-</body>
+      // 监听菜单变化
+      selector.addEventListener('change', function() {
+        const imagePath = this.value;
+        // 切换全景图路径
+        sky.setAttribute('src', imagePath);
+      });
+    </script>
+  </body>
 </html>
