@@ -36,7 +36,7 @@
 
     <div class="vr-menu" id="main-menu">
         <h3 style="margin:0 0 15px 0; color:#00d1b2; text-align:center;">VR 全景导航</h3>
-        <select id="lvl1"><option value="">选择区域</option></select>
+        <select id="lvl1"><option value="">选择一级目录</option></select>
         <select id="lvl2" disabled></select>
         <select id="lvl3" disabled></select>
         <div id="status-text">系统就绪</div>
@@ -78,13 +78,13 @@
             for (let key in vrData) l1.options.add(new Option(key, key));
 
             l1.onchange = () => {
-                l2.innerHTML = '<option value="">选择目录</option>';
+                l2.innerHTML = '<option value="">选择二级目录</option>';
                 l3.innerHTML = ''; l2.disabled = !l1.value;
                 if (l1.value) for (let key in vrData[l1.value]) l2.options.add(new Option(key, key));
             };
 
             l2.onchange = () => {
-                l3.innerHTML = '<option value="">选择点位</option>';
+                l3.innerHTML = '<option value="">选择三级目录</option>';
                 l3.disabled = !l2.value;
                 if (l2.value) {
                     const scenes = vrData[l1.value][l2.value];
