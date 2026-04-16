@@ -56,6 +56,7 @@
 
         function unlock() {
             if (document.getElementById('pass-input').value === "zjvr") {
+                // 优化后的数据结构：保持原名称，新增并列的一级目录
                 const realData = {
                     "时间地点事件": {
                         "202310十一广东": {
@@ -63,6 +64,14 @@
                         },
                         "20230107重庆两江游船": {
                             "码头全景": "VR/时间地点事件/20230107重庆两江游船/20230107_174542.jpg"
+                        },
+                        "202403-202404西双版纳": {
+                            "景区实拍": "VR/时间地点事件/202403-202404西双版纳/example.jpg" 
+                        }
+                    },
+                    "时间流": {
+                        "2024年回顾": {
+                            "年度合集": "VR/时间流/2024/summary.jpg"
                         }
                     }
                 };
@@ -102,11 +111,10 @@
                 img.onload = function() {
                     statusText.innerText = "⚙️ 硬件兼容性调整中...";
                     
-                    // 方案B：使用画布动态调整纹理尺寸
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
                     
-                    // 强制将 12160px 降低到大部分显卡支持的 8192px 上限
+                    // 核心优化：强制将纹理限制在 8192px 以内防止黑屏
                     const MAX_WIDTH = 8192;
                     if (img.width > MAX_WIDTH) {
                         canvas.width = MAX_WIDTH;
@@ -116,10 +124,8 @@
                         canvas.height = img.height;
                     }
 
-                    // 绘制图像到画布
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                     
-                    // 转换为 WebGL 可用的 base64 数据
                     try {
                         sky.setAttribute('src', canvas.toDataURL("image/jpeg", 0.85));
                         statusText.innerText = "✅ 全景渲染成功！可滑动视角";
@@ -132,7 +138,6 @@
                     statusText.innerText = "❌ 文件加载失败，请检查路径";
                 };
 
-                // 处理路径中可能存在的中文
                 img.src = encodeURI(l3.value);
             };
         }
