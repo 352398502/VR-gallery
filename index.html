@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的私人 VR 全景展厅</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+    <style>
+        body { margin: 0; font-family: sans-serif; background: #1a1a1a; color: white; }
+        #viewer { width: 100%; height: 80vh; background: #000; }
+        .controls { padding: 20px; text-align: center; }
+        select { padding: 10px; border-radius: 5px; background: #333; color: white; border: 1px solid #555; font-size: 16px; }
+        .info { font-size: 12px; color: #888; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div id="viewer"></div>
+
+<div class="controls">
+    <h3>选择全景图</h3>
+    <select id="scene-select" onchange="loadScene(this.value)">
+        <option value="r20260416_123904_035.jpg">第一个全景场景</option>
+        <option value="room2.jpg">第二个全景场景</option>
+    </select>
+    <p class="info">提示：请确保图片文件名与选项中的 value 一致</p>
+</div>
+
+<script>
+    let viewer = null;
+
+    function loadScene(imgName) {
+        if (viewer) viewer.destroy(); // 销毁旧实例，节省内存
+        
+        viewer = pannellum.viewer('viewer', {
+            "type": "equirectangular",
+            "panorama": imgName,
+            "autoLoad": true,
+            "compass": true
+        });
+    }
+
+    // 默认加载第一个
+    window.onload = () => {
+        const firstImg = document.getElementById('scene-select').value;
+        loadScene(firstImg);
+    };
+</script>
+</body>
+</html>
