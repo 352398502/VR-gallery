@@ -56,15 +56,15 @@
         <label>一级区域</label>
         <select id="lvl1"><option value="">请选择区域...</option></select>
         <label>二级目录</label>
-        <select id="lvl2" disabled><option value="">请先选择一级</option></select>
+        <select id="lvl2" disabled><option value="">请选择目录...</option></select>
         <label>三级点位</label>
-        <select id="lvl3" disabled><option value="">请先选择二级</option></select>
+        <select id="lvl3" disabled><option value="">请选择点位...</option></select>
         <div id="loading-tip">⏳ 资源加载中...</div>
         <div style="margin-top:20px; font-size:10px; color:#444; text-align:center;">SECURE BROWSER V2.0</div>
     </div>
 
-    <a-scene id="scene" loading-screen="dotsColor: #00d1b2; backgroundColor: black">
-        <a-sky id="main-sky" src="" color="#000" rotation="0 -90 0"></a-sky>
+    <a-scene>
+        <a-sky id="main-sky" color="#000" rotation="0 -90 0"></a-sky>
         <a-entity camera look-controls position="0 1.6 0"></a-entity>
     </a-scene>
 
@@ -78,22 +78,14 @@
         function unlock() {
             const password = document.getElementById('pass-input').value;
             if (password === "zjvr") {
-                // 严格匹配您的仓库结构：VR (文件夹) -> 时间地点事件 -> ...
+                // 重点：这里的路径必须与 GitHub 仓库中（image_bc5808.jpg）的大小写完全一致
                 const realData = {
                     "时间地点事件": {
-                        "20230107重庆两江游船": {
-                            "游船全景": "VR/时间地点事件/20230107重庆两江游船/演示场景.jpg" 
-                        },
                         "202310十一广东": {
                             "20231001_145635.jpg": "VR/时间地点事件/202310十一广东/20231001_145635.jpg"
                         },
-                        "202403-202404西双版纳": {
-                            "阅览室": "VR/时间地点事件/202403-202404西双版纳/20240412_110030.jpg"
-                        }
-                    },
-                    "时间流": {
-                        "默认分类": {
-                            "演示点位": "https://cdn.aframe.io/360-image-gallery-boilerplate/img/city.jpg"
+                        "20230107重庆两江游船": {
+                            "演示全景": "https://aframe.io/aframe/examples/boilerplate/panorama/puydesancy.jpg"
                         }
                     }
                 };
@@ -137,23 +129,19 @@
                     loadTip.style.display = 'block';
                     loadTip.innerText = "⏳ 资源加载中...";
                     
-                    // 修正点 1：对包含中文的路径进行转义编码，防止 GitHub 无法识别
-                    let finalPath = l3.value;
-                    if (!finalPath.startsWith('http')) {
-                        // 自动处理中文路径编码
-                        finalPath = encodeURI(finalPath);
-                    }
+                    // 修正点：自动处理路径中的中文转义
+                    const encodedPath = encodeURI(l3.value);
                     
                     const img = new Image();
                     img.onload = () => {
-                        sky.setAttribute('src', finalPath);
+                        sky.setAttribute('src', encodedPath);
                         loadTip.style.display = 'none';
                     };
                     img.onerror = () => {
-                        loadTip.innerText = "❌ 文件不存在或路径错误";
-                        console.error("无法加载资源:", finalPath);
+                        loadTip.innerText = "❌ 加载失败，请检查文件是否存在";
+                        console.error("加载失败:", encodedPath);
                     };
-                    img.src = finalPath;
+                    img.src = encodedPath;
                 }
             };
         }
