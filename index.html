@@ -2,10 +2,12 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>VR全景 自动兼容优化版</title>
+    <title>VR全景 缩略图导航版</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <style>
         body { background-color: #000; margin: 0; overflow: hidden; font-family: "Microsoft YaHei", sans-serif; }
+        
+        /* 授权层样式 */
         #auth-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #111; z-index: 10001; display: flex; align-items: center; justify-content: center;
@@ -13,14 +15,44 @@
         .auth-box { text-align: center; color: white; background: rgba(255,255,255,0.05); padding: 40px; border-radius: 20px; backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); }
         input { padding: 12px; border-radius: 8px; border: none; margin: 20px 0; width: 220px; text-align: center; font-size: 16px; background: #222; color: #fff; }
         button { padding: 12px 40px; background: #00d1b2; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        
-        .vr-menu {
+
+        /* 顶部菜单：仅保留一级和二级切换 */
+        .top-nav {
             position: absolute; top: 20px; left: 20px; z-index: 999;
-            background: rgba(0, 0, 0, 0.85); padding: 20px; border-radius: 12px;
-            color: white; width: 260px; display: none; border: 1px solid #333;
+            display: flex; gap: 10px; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 8px;
         }
-        select { width: 100%; padding: 12px; background: #222; color: white; border: 1px solid #444; border-radius: 6px; margin-bottom: 12px; }
-        #status-text { font-size: 13px; color: #00fa9a; margin-top: 10px; text-align: center; font-weight: bold; }
+        .top-nav select { background: #222; color: white; border: 1px solid #444; padding: 5px 10px; border-radius: 4px; outline: none; }
+
+        /* 底部缩略图栏：模仿 DM720 */
+        #thumb-bar {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            z-index: 999; display: flex; gap: 15px; padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px);
+            border-radius: 12px; max-width: 90%; overflow-x: auto;
+            border: 1px solid rgba(255,255,255,0.1); display: none;
+        }
+        /* 隐藏滚动条但保留功能 */
+        #thumb-bar::-webkit-scrollbar { display: none; }
+        
+        .thumb-item {
+            flex: 0 0 100px; cursor: pointer; transition: all 0.3s; text-align: center;
+        }
+        .thumb-img {
+            width: 100px; height: 60px; object-fit: cover; border-radius: 6px;
+            border: 2px solid transparent; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        .thumb-item:hover .thumb-img { transform: translateY(-5px); border-color: #00fa9a; }
+        .thumb-item.active .thumb-img { border-color: #00d1b2; box-shadow: 0 0 15px #00d1b2; }
+        .thumb-label {
+            color: white; font-size: 11px; margin-top: 5px; white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis; display: block;
+        }
+
+        #status-text {
+            position: absolute; bottom: 110px; left: 50%; transform: translateX(-50%);
+            color: #00fa9a; font-size: 13px; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            z-index: 998; pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -34,13 +66,13 @@
         </div>
     </div>
 
-    <div class="vr-menu" id="main-menu">
-        <h3 style="margin:0 0 15px 0; color:#00d1b2; text-align:center;">VR 全景导航</h3>
-        <select id="lvl1"><option value="">选择一级目录</option></select>
-        <select id="lvl2" disabled></select>
-        <select id="lvl3" disabled></select>
-        <div id="status-text">系统就绪</div>
+    <div class="top-nav" id="top-nav" style="display:none;">
+        <select id="lvl1"><option value="">选择分类</option></select>
+        <select id="lvl2" disabled><option value="">选择目录</option></select>
     </div>
+
+    <div id="thumb-bar"></div>
+    <div id="status-text"></div>
 
     <a-scene loading-screen="enabled: false">
         <a-sky id="main-sky" rotation="0 -90 0" material="shader: flat; npot: true;"></a-sky>
@@ -50,33 +82,31 @@
     <script>
         const l1 = document.getElementById('lvl1');
         const l2 = document.getElementById('lvl2');
-        const l3 = document.getElementById('lvl3');
+        const thumbBar = document.getElementById('thumb-bar');
         const sky = document.getElementById('main-sky');
         const statusText = document.getElementById('status-text');
 
         function unlock() {
             if (document.getElementById('pass-input').value === "zjvr") {
-                // 优化后的数据结构：保持原名称，新增并列的一级目录
                 const realData = {
                     "时间地点事件": {
                         "202310十一广东": {
-                            "20231001_145635.jpg": "VR/时间地点事件/202310十一广东/20231001_145635.jpg"
+                            "全景画面_1": "VR/时间地点事件/202310十一广东/20231001_145635.jpg",
+                            "备用视角": "https://aframe.io/aframe/examples/boilerplate/panorama/puydesancy.jpg"
                         },
                         "20230107重庆两江游船": {
-                            "码头全景": "VR/时间地点事件/20230107重庆两江游船/20230107_174542.jpg"
-                        },
-                        "202403-202404西双版纳": {
-                            "景区实拍": "VR/时间地点事件/202403-202404西双版纳/example.jpg" 
+                            "码头实拍": "VR/时间地点事件/20230107重庆两江游船/20230107_174542.jpg"
                         }
                     },
                     "时间流": {
-                        "2024年回顾": {
-                            "年度合集": "VR/时间流/2024/summary.jpg"
+                        "2024回顾": {
+                            "示例场景": "https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"
                         }
                     }
                 };
                 document.getElementById('auth-overlay').style.display = 'none';
-                document.getElementById('main-menu').style.display = 'block';
+                document.getElementById('top-nav').style.display = 'flex';
+                thumbBar.style.display = 'flex';
                 initVR(realData);
             } else {
                 document.getElementById('err-msg').innerText = "密码错误";
@@ -87,60 +117,70 @@
             for (let key in vrData) l1.options.add(new Option(key, key));
 
             l1.onchange = () => {
-                l2.innerHTML = '<option value="">选择二级目录</option>';
-                l3.innerHTML = ''; l2.disabled = !l1.value;
+                l2.innerHTML = '<option value="">选择目录</option>';
+                l2.disabled = !l1.value;
+                thumbBar.innerHTML = '';
                 if (l1.value) for (let key in vrData[l1.value]) l2.options.add(new Option(key, key));
             };
 
             l2.onchange = () => {
-                l3.innerHTML = '<option value="">选择三级目录</option>';
-                l3.disabled = !l2.value;
-                if (l2.value) {
-                    const scenes = vrData[l1.value][l2.value];
-                    for (let name in scenes) l3.options.add(new Option(name, scenes[name]));
+                thumbBar.innerHTML = '';
+                if (!l2.value) return;
+                
+                const scenes = vrData[l1.value][l2.value];
+                for (let name in scenes) {
+                    createThumbnail(name, scenes[name]);
                 }
             };
-
-            l3.onchange = () => {
-                if (!l3.value) return;
-                
-                statusText.innerText = "⏳ 正在载入 12K 超清资源...";
-                const img = new Image();
-                img.crossOrigin = "anonymous";
-                
-                img.onload = function() {
-                    statusText.innerText = "⚙️ 硬件兼容性调整中...";
-                    
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    
-                    // 核心优化：强制将纹理限制在 8192px 以内防止黑屏
-                    const MAX_WIDTH = 8192;
-                    if (img.width > MAX_WIDTH) {
-                        canvas.width = MAX_WIDTH;
-                        canvas.height = Math.floor(img.height * (MAX_WIDTH / img.width));
-                    } else {
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                    }
-
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    
-                    try {
-                        sky.setAttribute('src', canvas.toDataURL("image/jpeg", 0.85));
-                        statusText.innerText = "✅ 全景渲染成功！可滑动视角";
-                    } catch (e) {
-                        statusText.innerText = "❌ 显存不足，请刷新重试";
-                    }
-                };
-
-                img.onerror = () => {
-                    statusText.innerText = "❌ 文件加载失败，请检查路径";
-                };
-
-                img.src = encodeURI(l3.value);
-            };
         }
+
+        function createThumbnail(name, url) {
+            const item = document.createElement('div');
+            item.className = 'thumb-item';
+            
+            // 缩略图逻辑：如果路径是本地的，我们直接用原图作为缩略图显示
+            // 在生产环境下，建议另建一个 thumbs 文件夹存放小图以提升加载速度
+            item.innerHTML = `
+                <img class="thumb-img" src="${url}">
+                <span class="thumb-label">${name}</span>
+            `;
+            
+            item.onclick = () => {
+                document.querySelectorAll('.thumb-item').forEach(el => el.classList.remove('active'));
+                item.classList.add('active');
+                loadPanorama(url);
+            };
+            
+            thumbBar.appendChild(item);
+        }
+
+        function loadPanorama(url) {
+            statusText.innerText = "⏳ 正在加载超清全景...";
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const MAX_WIDTH = 8192; // 关键兼容性限制
+                
+                if (img.width > MAX_WIDTH) {
+                    canvas.width = MAX_WIDTH;
+                    canvas.height = Math.floor(img.height * (MAX_WIDTH / img.width));
+                } else {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                }
+
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                sky.setAttribute('src', canvas.toDataURL("image/jpeg", 0.85));
+                statusText.innerText = "✅ 渲染完成";
+                setTimeout(() => { statusText.innerText = ""; }, 2000);
+            };
+            
+            img.src = encodeURI(url);
+        }
+
         document.getElementById('pass-input').addEventListener('keyup', (e) => { if (e.key === 'Enter') unlock(); });
     </script>
 </body>
