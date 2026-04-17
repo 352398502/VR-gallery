@@ -2,12 +2,12 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>VR全景 缩略图导航版</title>
+    <title>VR全景 自动扫描版</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <style>
         body { background-color: #000; margin: 0; overflow: hidden; font-family: "Microsoft YaHei", sans-serif; }
         
-        /* 授权层样式 */
+        /* 授权层 */
         #auth-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #111; z-index: 10001; display: flex; align-items: center; justify-content: center;
@@ -16,40 +16,31 @@
         input { padding: 12px; border-radius: 8px; border: none; margin: 20px 0; width: 220px; text-align: center; font-size: 16px; background: #222; color: #fff; }
         button { padding: 12px 40px; background: #00d1b2; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
 
-        /* 顶部菜单：仅保留一级和二级切换 */
+        /* 导航菜单 */
         .top-nav {
             position: absolute; top: 20px; left: 20px; z-index: 999;
             display: flex; gap: 10px; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 8px;
         }
-        .top-nav select { background: #222; color: white; border: 1px solid #444; padding: 5px 10px; border-radius: 4px; outline: none; }
+        .top-nav select { background: #222; color: white; border: 1px solid #444; padding: 5px 10px; border-radius: 4px; outline: none; min-width: 140px; }
 
-        /* 底部缩略图栏：模仿 DM720 */
+        /* 底部缩略图栏 */
         #thumb-bar {
             position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
-            z-index: 999; display: flex; gap: 15px; padding: 10px 20px;
-            background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px);
+            z-index: 999; display: flex; gap: 15px; padding: 12px 20px;
+            background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(15px);
             border-radius: 12px; max-width: 90%; overflow-x: auto;
-            border: 1px solid rgba(255,255,255,0.1); display: none;
+            border: 1px solid rgba(255,255,255,0.15); display: none;
         }
-        /* 隐藏滚动条但保留功能 */
         #thumb-bar::-webkit-scrollbar { display: none; }
         
-        .thumb-item {
-            flex: 0 0 100px; cursor: pointer; transition: all 0.3s; text-align: center;
-        }
-        .thumb-img {
-            width: 100px; height: 60px; object-fit: cover; border-radius: 6px;
-            border: 2px solid transparent; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-        }
-        .thumb-item:hover .thumb-img { transform: translateY(-5px); border-color: #00fa9a; }
+        .thumb-item { flex: 0 0 110px; cursor: pointer; transition: all 0.3s; text-align: center; }
+        .thumb-img { width: 110px; height: 65px; object-fit: cover; border-radius: 6px; border: 2px solid transparent; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        .thumb-item:hover .thumb-img { border-color: #00fa9a; transform: translateY(-3px); }
         .thumb-item.active .thumb-img { border-color: #00d1b2; box-shadow: 0 0 15px #00d1b2; }
-        .thumb-label {
-            color: white; font-size: 11px; margin-top: 5px; white-space: nowrap;
-            overflow: hidden; text-overflow: ellipsis; display: block;
-        }
+        .thumb-label { color: white; font-size: 11px; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; text-shadow: 0 1px 2px #000; }
 
         #status-text {
-            position: absolute; bottom: 110px; left: 50%; transform: translateX(-50%);
+            position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%);
             color: #00fa9a; font-size: 13px; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.8);
             z-index: 998; pointer-events: none;
         }
@@ -67,12 +58,16 @@
     </div>
 
     <div class="top-nav" id="top-nav" style="display:none;">
-        <select id="lvl1"><option value="">选择分类</option></select>
+        <select id="lvl1">
+            <option value="">选择分类</option>
+            <option value="VR/时间地点事件">时间地点事件</option>
+            <option value="VR/时间流">时间流</option>
+        </select>
         <select id="lvl2" disabled><option value="">选择目录</option></select>
     </div>
 
     <div id="thumb-bar"></div>
-    <div id="status-text"></div>
+    <div id="status-text">系统准备就绪</div>
 
     <a-scene loading-screen="enabled: false">
         <a-sky id="main-sky" rotation="0 -90 0" material="shader: flat; npot: true;"></a-sky>
@@ -80,6 +75,12 @@
     </a-scene>
 
     <script>
+        // 已根据您的 GitHub 信息自动填入
+        const CONFIG = {
+            owner: "ai-file",
+            repo: "VR"
+        };
+
         const l1 = document.getElementById('lvl1');
         const l2 = document.getElementById('lvl2');
         const thumbBar = document.getElementById('thumb-bar');
@@ -88,48 +89,54 @@
 
         function unlock() {
             if (document.getElementById('pass-input').value === "zjvr") {
-                const realData = {
-                    "时间地点事件": {
-                        "202310十一广东": {
-                            "全景画面_1": "VR/时间地点事件/202310十一广东/20231001_145635.jpg",
-                            "备用视角": "https://aframe.io/aframe/examples/boilerplate/panorama/puydesancy.jpg"
-                        },
-                        "20230107重庆两江游船": {
-                            "码头实拍": "VR/时间地点事件/20230107重庆两江游船/20230107_174542.jpg"
-                        }
-                    },
-                    "时间流": {
-                        "2024回顾": {
-                            "示例场景": "https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"
-                        }
-                    }
-                };
                 document.getElementById('auth-overlay').style.display = 'none';
                 document.getElementById('top-nav').style.display = 'flex';
                 thumbBar.style.display = 'flex';
-                initVR(realData);
+                initAutoScanner();
             } else {
                 document.getElementById('err-msg').innerText = "密码错误";
             }
         }
 
-        function initVR(vrData) {
-            for (let key in vrData) l1.options.add(new Option(key, key));
-
-            l1.onchange = () => {
-                l2.innerHTML = '<option value="">选择目录</option>';
-                l2.disabled = !l1.value;
-                thumbBar.innerHTML = '';
-                if (l1.value) for (let key in vrData[l1.value]) l2.options.add(new Option(key, key));
+        function initAutoScanner() {
+            // 一级目录扫描二级子文件夹
+            l1.onchange = async () => {
+                if (!l1.value) return;
+                l2.disabled = true;
+                l2.innerHTML = '<option value="">⏳ 同步目录中...</option>';
+                
+                try {
+                    const res = await fetch(`https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${l1.value}`);
+                    const data = await res.json();
+                    
+                    l2.innerHTML = '<option value="">选择目录</option>';
+                    data.forEach(item => {
+                        if (item.type === "dir") l2.options.add(new Option(item.name, item.path));
+                    });
+                    l2.disabled = false;
+                } catch (e) {
+                    statusText.innerText = "❌ 无法连接 GitHub 服务";
+                }
             };
 
-            l2.onchange = () => {
-                thumbBar.innerHTML = '';
+            // 二级目录扫描图片文件
+            l2.onchange = async () => {
                 if (!l2.value) return;
+                thumbBar.innerHTML = '';
+                statusText.innerText = "⏳ 正在检索全景资源...";
                 
-                const scenes = vrData[l1.value][l2.value];
-                for (let name in scenes) {
-                    createThumbnail(name, scenes[name]);
+                try {
+                    const res = await fetch(`https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${l2.value}`);
+                    const data = await res.json();
+                    
+                    data.forEach(file => {
+                        if (file.name.match(/\.(jpg|jpeg|png|JPG|PNG)$/)) {
+                            createThumbnail(file.name, file.download_url);
+                        }
+                    });
+                    statusText.innerText = "✅ 已自动更新下方预览图";
+                } catch (e) {
+                    statusText.innerText = "❌ 检索失败";
                 }
             };
         }
@@ -137,32 +144,23 @@
         function createThumbnail(name, url) {
             const item = document.createElement('div');
             item.className = 'thumb-item';
-            
-            // 缩略图逻辑：如果路径是本地的，我们直接用原图作为缩略图显示
-            // 在生产环境下，建议另建一个 thumbs 文件夹存放小图以提升加载速度
-            item.innerHTML = `
-                <img class="thumb-img" src="${url}">
-                <span class="thumb-label">${name}</span>
-            `;
-            
+            item.innerHTML = `<img class="thumb-img" src="${url}"><span class="thumb-label">${name}</span>`;
             item.onclick = () => {
                 document.querySelectorAll('.thumb-item').forEach(el => el.classList.remove('active'));
                 item.classList.add('active');
                 loadPanorama(url);
             };
-            
             thumbBar.appendChild(item);
         }
 
         function loadPanorama(url) {
-            statusText.innerText = "⏳ 正在加载超清全景...";
+            statusText.innerText = "⏳ 正在载入 12K 资源并优化硬件性能...";
             const img = new Image();
             img.crossOrigin = "anonymous";
-            
             img.onload = function() {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
-                const MAX_WIDTH = 8192; // 关键兼容性限制
+                const MAX_WIDTH = 8192; // 解决 12K 黑屏问题的关键优化
                 
                 if (img.width > MAX_WIDTH) {
                     canvas.width = MAX_WIDTH;
@@ -171,14 +169,12 @@
                     canvas.width = img.width;
                     canvas.height = img.height;
                 }
-
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                 sky.setAttribute('src', canvas.toDataURL("image/jpeg", 0.85));
-                statusText.innerText = "✅ 渲染完成";
-                setTimeout(() => { statusText.innerText = ""; }, 2000);
+                statusText.innerText = "✅ 全景已就绪，可拖动旋转";
+                setTimeout(() => { if(statusText.innerText.includes("就绪")) statusText.innerText = ""; }, 3000);
             };
-            
-            img.src = encodeURI(url);
+            img.src = url;
         }
 
         document.getElementById('pass-input').addEventListener('keyup', (e) => { if (e.key === 'Enter') unlock(); });
